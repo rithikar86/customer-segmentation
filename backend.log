@@ -1,0 +1,13 @@
+2026-03-19 19:35:17 [INFO] retail_backend - Fetching API URL: https://jsonplaceholder.typicode.com/users
+2026-03-19 19:35:20 [INFO] retail_backend - API raw fetch returned 10 rows
+2026-03-19 19:35:20 [INFO] retail_backend - Appended 10 rows into orders (duplicates ignored)
+2026-03-19 19:35:52 [INFO] retail_backend - Fetching API URL: https://jsonplaceholder.typicode.com/users
+2026-03-19 19:35:54 [INFO] retail_backend - API raw fetch returned 10 rows
+2026-03-19 19:35:54 [INFO] retail_backend - Appended 10 rows into orders (duplicates ignored)
+2026-03-19 19:36:29 [INFO] retail_backend - Fetching API URL: https://jsonplaceholder.typicode.com/users
+2026-03-19 19:37:01 [INFO] retail_backend - API raw fetch returned 10 rows
+2026-03-19 19:37:01 [INFO] retail_backend - Appended 10 rows into orders (duplicates ignored)
+2026-03-19 19:37:21 [INFO] retail_backend - Fetching API URL: https://jsonplaceholder.typicode.com/users
+2026-03-19 19:37:24 [INFO] retail_backend - API raw fetch returned 10 rows
+2026-03-19 19:37:24 [INFO] retail_backend - Appended 10 rows into orders (duplicates ignored)
+2026-03-19 19:37:24 [INFO] retail_backend - RFM segments written to SQLite table rfm_segments (11 rows)
