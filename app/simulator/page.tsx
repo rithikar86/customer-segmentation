@@ -10,6 +10,7 @@ import type { LogEntry } from "@/components/console-log"
 
 export default function SimulatorPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>(mockCustomers[0].id)
+  const [receiverEmail, setReceiverEmail] = useState<string>(mockCustomers[0].email)
   const [isSimulating, setIsSimulating] = useState(false)
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [purchaseAmount, setPurchaseAmount] = useState<number>(150)
@@ -28,6 +29,14 @@ export default function SimulatorPage() {
         type,
       },
     ])
+  }
+
+  const handleCustomerChange = (customerId: string) => {
+    setSelectedCustomerId(customerId)
+    const customer = mockCustomers.find((c) => c.id === customerId)
+    if (customer) {
+      setReceiverEmail(customer.email)
+    }
   }
 
   const handleSimulatePurchase = async () => {
@@ -78,37 +87,47 @@ export default function SimulatorPage() {
     setIsSimulating(true)
     setLogs([])
 
-    addLog("Initiating notification delivery...", "info")
-    await new Promise((resolve) => setTimeout(resolve, 400))
+    try {
+      addLog("[Checking RFM Segment...]", "info")
+      await new Promise((resolve) => setTimeout(resolve, 400))
 
-    addLog("Connecting to mail.voltstream.com...", "smtp")
-    await new Promise((resolve) => setTimeout(resolve, 600))
+      addLog("[Connecting to Python Backend...]", "info")
+      await new Promise((resolve) => setTimeout(resolve, 600))
 
-    addLog("Authenticating SMTP credentials", "info")
-    await new Promise((resolve) => setTimeout(resolve, 300))
+      addLog("[SMTP Handshake Successful...]", "success")
+      await new Promise((resolve) => setTimeout(resolve, 400))
 
-    addLog("Building email message", "info")
-    await new Promise((resolve) => setTimeout(resolve, 300))
+      // Make POST request to local backend
+      const response = await fetch("http://localhost:5000/api/send-notification", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customer_email: receiverEmail,
+          customer_name: selectedCustomer.name,
+          offer_text: `Exclusive offer for ${selectedCustomer.segment}: Get 15% off on your next purchase!`,
+        }),
+      })
 
-    addLog(`Recipient: ${selectedCustomer.email}`, "info")
-    await new Promise((resolve) => setTimeout(resolve, 200))
+      if (!response.ok) {
+        throw new Error(`Backend error: ${response.status}`)
+      }
 
-    addLog("Subject: Exclusive Offer for You", "info")
-    await new Promise((resolve) => setTimeout(resolve, 200))
+      const result = await response.json()
+      addLog(`[Email Delivered to ${receiverEmail}]`, "success")
+      await new Promise((resolve) => setTimeout(resolve, 300))
 
-    addLog("Attaching personalized recommendation", "info")
-    await new Promise((resolve) => setTimeout(resolve, 400))
+      addLog("Delivery confirmed - Status: 250 OK", "success")
 
-    addLog("Sending via SMTP gateway...", "smtp")
-    await new Promise((resolve) => setTimeout(resolve, 600))
-
-    addLog(`Email delivered to ${selectedCustomer.email}`, "success")
-    await new Promise((resolve) => setTimeout(resolve, 200))
-
-    addLog("Delivery confirmed - Status: 250 OK", "success")
-
-    setIsSimulating(false)
-    showToast("Notification sent successfully to " + selectedCustomer.email, "success")
+      setIsSimulating(false)
+      showToast("Notification sent successfully to " + receiverEmail, "success")
+    } catch (error) {
+      console.error("[v0] Send notification error:", error)
+      addLog(`Error: ${error instanceof Error ? error.message : "Failed to send notification"}`, "error")
+      setIsSimulating(false)
+      showToast("Failed to send notification. Is backend running?", "error")
+    }
   }
 
   const clearLogs = () => {
@@ -131,7 +150,7 @@ export default function SimulatorPage() {
       <ChartCard title="Select Customer" subtitle="Choose a customer to simulate with">
         <select
           value={selectedCustomerId}
-          onChange={(e) => setSelectedCustomerId(e.target.value)}
+          onChange={(e) => handleCustomerChange(e.target.value)}
           className="h-10 w-full max-w-md rounded-lg border border-border bg-input px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
         >
           {mockCustomers.map((customer) => (
@@ -216,6 +235,21 @@ export default function SimulatorPage() {
               max="10000"
               className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
+          </div>
+
+          {/* Receiver Email for Testing */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-foreground mb-2">Receiver Email (for testing)</label>
+            <input
+              type="email"
+              value={receiverEmail}
+              onChange={(e) => setReceiverEmail(e.target.value)}
+              placeholder="test@example.com"
+              className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              Change this to test sending notifications to different email addresses
+            </p>
           </div>
 
           {/* Action Buttons */}
