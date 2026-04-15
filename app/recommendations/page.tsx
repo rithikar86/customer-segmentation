@@ -1,79 +1,69 @@
 "use client"
 
 import { useState } from "react"
-import { recommendedProducts, segments } from "@/lib/mock-data"
-import { Filter, Package, TrendingUp, ShoppingCart, Star } from "lucide-react"
+import { ChartCard } from "@/components/chart-card"
+import { mockProducts, segments, mockRecommendationRules, formatCurrency } from "@/lib/mock-data"
+import { Filter, ShoppingCart, TrendingUp, Star, Zap } from "lucide-react"
 
 export default function RecommendationsPage() {
-  const [selectedSegment, setSelectedSegment] = useState<string>("all")
-  const [sortBy, setSortBy] = useState<"score" | "frequency">("score")
+  const [selectedSegment, setSelectedSegment] = useState<string>("Elite Tech Buyers")
+  const [selectedProduct, setSelectedProduct] = useState<(typeof mockProducts)[0] | null>(null)
 
-  const sortedProducts = [...recommendedProducts].sort((a, b) => {
-    if (sortBy === "score") return b.score - a.score
-    return b.purchaseFrequency - a.purchaseFrequency
-  })
+  const getRecommendationsForSegment = (segment: string) => {
+    const rules = mockRecommendationRules.filter((rule) => rule.segment === segment)
+    const recommended = []
+
+    for (const rule of rules) {
+      const products = mockProducts.filter((p) => p.category === rule.category)
+      for (const product of products) {
+        recommended.push({
+          ...product,
+          confidence: rule.confidence,
+          reason: `Popular in ${rule.category}`,
+        })
+      }
+    }
+
+    return recommended.sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
+  }
+
+  const recommendations = getRecommendationsForSegment(selectedSegment)
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-foreground">Product Recommendations</h2>
-          <p className="text-sm text-muted-foreground">
-            AI-powered product recommendations based on customer segments and purchase patterns
-          </p>
+      {/* Segment Selection */}
+      <ChartCard
+        title="Product Recommendations by Segment"
+        subtitle="AI-powered recommendations tailored to customer segments"
+      >
+        <div className="flex gap-2 flex-wrap">
+          {segments.map((segment) => (
+            <button
+              key={segment.name}
+              onClick={() => setSelectedSegment(segment.name)}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+                selectedSegment === segment.name
+                  ? "bg-primary text-primary-foreground"
+                  : "border border-border bg-card text-foreground hover:border-primary/50"
+              }`}
+              style={{
+                borderColor:
+                  selectedSegment === segment.name ? undefined : segment.color,
+              }}
+            >
+              {segment.name}
+            </button>
+          ))}
         </div>
-      </div>
+      </ChartCard>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <select
-            value={selectedSegment}
-            onChange={(e) => setSelectedSegment(e.target.value)}
-            className="h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="all">All Segments</option>
-            {segments.map((segment) => (
-              <option key={segment.name} value={segment.name}>
-                {segment.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Sort by:</span>
-          <button
-            onClick={() => setSortBy("score")}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-              sortBy === "score"
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground hover:bg-accent"
-            }`}
-          >
-            Recommendation Score
-          </button>
-          <button
-            onClick={() => setSortBy("frequency")}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-              sortBy === "frequency"
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground hover:bg-accent"
-            }`}
-          >
-            Purchase Frequency
-          </button>
-        </div>
-      </div>
-
-      {/* Product Cards */}
+      {/* Products Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {sortedProducts.map((product, index) => (
+        {recommendations.map((product, index) => (
           <div
             key={product.id}
-            className="group relative rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/50 hover:shadow-lg"
+            onClick={() => setSelectedProduct(product)}
+            className="group relative cursor-pointer rounded-lg border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-lg hover:bg-secondary/30"
           >
             {/* Rank Badge */}
             {index < 3 && (
@@ -82,109 +72,178 @@ export default function RecommendationsPage() {
               </div>
             )}
 
+            {/* Confidence Badge */}
+            {product.confidence && (
+              <div className="absolute right-2 top-2 rounded-full bg-accent/10 px-2 py-1 text-xs font-semibold text-accent">
+                {(product.confidence * 100).toFixed(0)}% match
+              </div>
+            )}
+
             {/* Product Icon */}
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-              <Package className="h-6 w-6 text-primary" />
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-xl">
+              {product.image}
             </div>
 
             {/* Product Info */}
-            <h3 className="mb-1 text-sm font-semibold text-foreground group-hover:text-primary">
+            <h3 className="mb-1 text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2">
               {product.name}
             </h3>
-            <p className="mb-4 text-xs text-muted-foreground">{product.category}</p>
+            <p className="mb-3 text-xs text-muted-foreground">{product.category}</p>
 
-            {/* Metrics */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Star className="h-3 w-3" />
-                  Score
-                </span>
-                <div className="flex items-center gap-2">
-                  <div className="h-1.5 w-16 rounded-full bg-secondary">
-                    <div
-                      className="h-1.5 rounded-full bg-primary"
-                      style={{ width: `${product.score * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-xs font-medium text-foreground">
-                    {(product.score * 100).toFixed(0)}%
-                  </span>
-                </div>
-              </div>
+            {/* Price */}
+            <p className="mb-3 text-lg font-bold text-accent">{formatCurrency(product.price)}</p>
 
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <ShoppingCart className="h-3 w-3" />
-                  Purchases
-                </span>
-                <span className="text-xs font-medium text-foreground">
-                  {product.purchaseFrequency}
-                </span>
+            {/* Rating */}
+            <div className="mb-3 flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star
+                    key={i}
+                    className={`h-3 w-3 ${
+                      i < Math.floor(product.rating)
+                        ? "fill-yellow-500 text-yellow-500"
+                        : "text-muted-foreground"
+                    }`}
+                  />
+                ))}
               </div>
-
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <TrendingUp className="h-3 w-3" />
-                  Trend
-                </span>
-                <span className="text-xs font-medium text-chart-2">+12%</span>
-              </div>
+              <span className="text-xs text-muted-foreground">({product.reviews})</span>
             </div>
 
-            {/* Action */}
-            <button className="mt-4 w-full rounded-lg border border-border bg-background py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent">
-              View Details
+            {/* Tags */}
+            <div className="mb-3 flex gap-1 flex-wrap">
+              {product.tags.slice(0, 2).map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+
+            {/* Add to Cart */}
+            <button className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-primary hover:text-primary-foreground hover:border-primary">
+              <ShoppingCart className="h-4 w-4 inline mr-2" />
+              View Product
             </button>
           </div>
         ))}
       </div>
 
-      {/* Summary Stats */}
+      {/* Product Details */}
+      {selectedProduct && (
+        <ChartCard title={selectedProduct.name} subtitle={`${selectedProduct.category} • ID: ${selectedProduct.id}`}>
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-lg bg-secondary/30 border border-border p-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Price</p>
+                <p className="text-2xl font-bold text-accent">{formatCurrency(selectedProduct.price)}</p>
+              </div>
+              <div className="rounded-lg bg-secondary/30 border border-border p-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Rating</p>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`h-4 w-4 ${
+                          i < Math.floor(selectedProduct.rating)
+                            ? "fill-yellow-500 text-yellow-500"
+                            : "text-muted-foreground"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">
+                    {selectedProduct.rating} ({selectedProduct.reviews} reviews)
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="rounded-lg bg-secondary/30 border border-border p-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Product Description</p>
+              <p className="text-sm text-foreground">
+                Professional-grade {selectedProduct.name.toLowerCase()} with premium build quality and advanced features.
+                Perfect for {selectedSegment === "Elite Tech Buyers" ? "professional installations" : "DIY projects"}.
+              </p>
+            </div>
+
+            {/* Tags */}
+            <div className="flex gap-2 flex-wrap">
+              {selectedProduct.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+
+            {/* Actions */}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button className="rounded-lg bg-primary text-primary-foreground px-4 py-3 text-sm font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
+                <ShoppingCart className="h-4 w-4" />
+                Add to Campaign
+              </button>
+              <button
+                onClick={() => setSelectedProduct(null)}
+                className="rounded-lg border border-border bg-card text-foreground px-4 py-3 text-sm font-semibold hover:bg-secondary transition-colors"
+              >
+                Close Details
+              </button>
+            </div>
+          </div>
+        </ChartCard>
+      )}
+
+      {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-border bg-card p-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-              <Package className="h-5 w-5 text-primary" />
+        <div className="rounded-lg border border-border bg-card p-4">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <ShoppingCart className="h-4 w-4 text-primary" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Total Products</p>
-              <p className="text-xl font-bold text-foreground">{recommendedProducts.length}</p>
-            </div>
+            <p className="text-xs font-semibold text-muted-foreground">Recommended Products</p>
           </div>
+          <p className="text-2xl font-bold text-foreground">{recommendations.length}</p>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-chart-2/10">
-              <TrendingUp className="h-5 w-5 text-chart-2" />
+        <div className="rounded-lg border border-border bg-card p-4">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10">
+              <Zap className="h-4 w-4 text-accent" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Avg Score</p>
-              <p className="text-xl font-bold text-foreground">
-                {(
-                  (recommendedProducts.reduce((acc, p) => acc + p.score, 0) /
-                    recommendedProducts.length) *
+            <p className="text-xs font-semibold text-muted-foreground">Avg Confidence</p>
+          </div>
+          <p className="text-2xl font-bold text-accent">
+            {recommendations.length > 0
+              ? (
+                  (recommendations.reduce((sum, p) => sum + (p.confidence || 0), 0) /
+                    recommendations.length) *
                   100
-                ).toFixed(0)}
-                %
-              </p>
-            </div>
-          </div>
+                ).toFixed(0)
+              : "0"}
+            %
+          </p>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-chart-3/10">
-              <ShoppingCart className="h-5 w-5 text-chart-3" />
+        <div className="rounded-lg border border-border bg-card p-4">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/10">
+              <TrendingUp className="h-4 w-4 text-green-500" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Total Purchases</p>
-              <p className="text-xl font-bold text-foreground">
-                {recommendedProducts.reduce((acc, p) => acc + p.purchaseFrequency, 0).toLocaleString()}
-              </p>
-            </div>
+            <p className="text-xs font-semibold text-muted-foreground">Avg Rating</p>
           </div>
+          <p className="text-2xl font-bold text-foreground">
+            {recommendations.length > 0
+              ? (recommendations.reduce((sum, p) => sum + p.rating, 0) / recommendations.length).toFixed(1)
+              : "0"}
+            ★
+          </p>
         </div>
       </div>
     </div>
