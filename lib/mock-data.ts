@@ -15,15 +15,24 @@ export interface Customer {
   feedbackScore: number
 }
 
-export interface Product {
+export interface AssociationRule {
+  antecedent: string
+  consequent: string
+  confidence: number
+  lift: number
+  support: number
+  segment?: string
+}
+
+export interface InventoryProduct {
   id: string
   name: string
-  category: string
+  category: "Lighting" | "Wiring" | "Power Devices" | "Consumer Electronics"
   price: number
+  stock: number
+  reorderLevel: number
   rating: number
   reviews: number
-  image: string
-  tags: string[]
 }
 
 export interface InventoryItem {
@@ -77,6 +86,30 @@ export const mockProducts: Product[] = [
   { id: "P006", name: "Heavy-Duty Wire Strippers Set", category: "Hand Tools", price: 34.99, rating: 4.9, reviews: 412, image: "✂️", tags: ["Essential", "Best-Seller"] },
   { id: "P007", name: "Solar Panel Kit 5kW", category: "Energy Solutions", price: 2199.99, rating: 4.7, reviews: 87, image: "☀️", tags: ["Green", "Premium"] },
   { id: "P008", name: "USB Charging Hub Pro", category: "Accessories", price: 24.99, rating: 4.3, reviews: 567, image: "🔌", tags: ["Value", "Essential"] },
+]
+
+// VoltStream Inventory Products - Electrical & Electronics Categories
+export const mockInventoryProducts: InventoryProduct[] = [
+  { id: "INV001", name: "LED Ceiling Light 60W", category: "Lighting", price: 45.99, stock: 28, reorderLevel: 15, rating: 4.6, reviews: 234 },
+  { id: "INV002", name: "Emergency Tube Light 40W", category: "Lighting", price: 28.50, stock: 8, reorderLevel: 20, rating: 4.4, reviews: 156 },
+  { id: "INV003", name: "Electrical Wire 2.5mm (100m)", category: "Wiring", price: 35.00, stock: 42, reorderLevel: 30, rating: 4.8, reviews: 412 },
+  { id: "INV004", name: "House Wiring Cable 1.5mm", category: "Wiring", price: 22.99, stock: 5, reorderLevel: 25, rating: 4.5, reviews: 289 },
+  { id: "INV005", name: "MCB Single Pole 16A", category: "Power Devices", price: 12.50, stock: 156, reorderLevel: 50, rating: 4.7, reviews: 523 },
+  { id: "INV006", name: "Power Stabilizer 5kVA", category: "Power Devices", price: 189.99, stock: 3, reorderLevel: 5, rating: 4.6, reviews: 87 },
+  { id: "INV007", name: "Inverter 1500W Pure Sine", category: "Power Devices", stock: 12, price: 299.99, reorderLevel: 10, rating: 4.9, reviews: 198 },
+  { id: "INV008", name: "Tubular Battery 150Ah", category: "Power Devices", price: 189.50, stock: 6, reorderLevel: 8, rating: 4.8, reviews: 145 },
+  { id: "INV009", name: "Smartphone Fast Charger 65W", category: "Consumer Electronics", price: 24.99, stock: 89, reorderLevel: 40, rating: 4.5, reviews: 567 },
+  { id: "INV010", name: "Tablet Charging Cable Type-C", category: "Consumer Electronics", price: 12.99, stock: 145, reorderLevel: 60, rating: 4.4, reviews: 298 },
+]
+
+// Association Rules for Market Basket Analysis
+export const mockAssociationRules: AssociationRule[] = [
+  { antecedent: "Inverter 1500W Pure Sine", consequent: "Tubular Battery 150Ah", confidence: 0.92, lift: 3.2, support: 0.18 },
+  { antecedent: "Power Stabilizer 5kVA", consequent: "MCB Single Pole 16A", confidence: 0.87, lift: 2.8, support: 0.14 },
+  { antecedent: "Electrical Wire 2.5mm", consequent: "MCB Single Pole 16A", confidence: 0.85, lift: 2.6, support: 0.22 },
+  { antecedent: "Smartphone Fast Charger 65W", consequent: "Tablet Charging Cable Type-C", confidence: 0.78, lift: 1.95, support: 0.31 },
+  { antecedent: "LED Ceiling Light 60W", consequent: "Electrical Wire 2.5mm", confidence: 0.81, lift: 2.3, support: 0.26 },
+  { antecedent: "Emergency Tube Light 40W", consequent: "Power Stabilizer 5kVA", confidence: 0.76, lift: 1.8, support: 0.12 },
 ]
 
 export const mockInventory: InventoryItem[] = [

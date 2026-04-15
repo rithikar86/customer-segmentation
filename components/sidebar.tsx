@@ -12,6 +12,8 @@ import {
   Upload,
   ChevronLeft,
   ChevronRight,
+  MessageSquareWarning,
+  Boxes,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -19,7 +21,9 @@ const navItems = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Segmentation Analysis", href: "/segmentation", icon: PieChart },
   { name: "Customer Insights", href: "/customers", icon: Users },
+  { name: "Feedback Insights", href: "/insights", icon: MessageSquareWarning },
   { name: "Product Recommendations", href: "/recommendations", icon: Package },
+  { name: "Inventory Management", href: "/inventory", icon: Boxes },
   { name: "Simulator", href: "/simulator", icon: Play },
   { name: "Data Upload", href: "/upload", icon: Upload },
 ]

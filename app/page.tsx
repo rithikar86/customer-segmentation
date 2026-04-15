@@ -1,12 +1,21 @@
 import { AlertTriangle, DollarSign, TrendingUp, Zap } from "lucide-react"
 import { KPICard } from "@/components/kpi-card"
 import { ChartCard } from "@/components/chart-card"
+import { RFMTooltip } from "@/components/rfm-tooltip"
 import { SegmentPieChart, CategorySalesChart, InventoryAlertWidget, NotificationFeed } from "@/components/dashboard-charts"
 import { mockDashboardData, mockSegmentOffers, formatCurrency, formatNumber } from "@/lib/mock-data"
 
 export default function DashboardPage() {
   return (
     <div className="space-y-6">
+      {/* Header with RFM Info */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">VoltStream Dashboard</h1>
+          <p className="text-sm text-muted-foreground">RFM-based customer segmentation for electrical retail</p>
+        </div>
+        <RFMTooltip />
+      </div>
       {/* KPI Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KPICard
