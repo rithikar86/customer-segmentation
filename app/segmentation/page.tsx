@@ -1,224 +1,173 @@
 "use client"
 
 import { useState } from "react"
-import {
-  ScatterChart,
-  Scatter,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  ZAxis,
-} from "recharts"
 import { ChartCard } from "@/components/chart-card"
-import { scatterData, segments, getSegmentColor } from "@/lib/mock-data"
-import { Filter } from "lucide-react"
+import { mockCustomers, segments, mockSegmentOffers, getSegmentColor } from "@/lib/mock-data"
+import { Filter, TrendingUp, Users } from "lucide-react"
 
 export default function SegmentationPage() {
   const [selectedSegment, setSelectedSegment] = useState<string>("all")
 
-  const filteredData =
+  const filteredCustomers =
     selectedSegment === "all"
-      ? scatterData
-      : scatterData.filter((d) => d.segment === selectedSegment)
+      ? mockCustomers
+      : mockCustomers.filter((c) => c.segment === selectedSegment)
 
-  const groupedData =
-    selectedSegment === "all"
-      ? segments.map((segment) => ({
-          name: segment.name,
-          data: scatterData
-            .filter((d) => d.segment === segment.name)
-            .map((d) => ({
-              x: d.recency,
-              y: d.monetary,
-              z: d.frequency * 10,
-              segment: d.segment,
-              id: d.id,
-              frequency: d.frequency,
-            })),
-          color: segment.color,
-        }))
-      : [
-          {
-            name: selectedSegment,
-            data: filteredData.map((d) => ({
-              x: d.recency,
-              y: d.monetary,
-              z: d.frequency * 10,
-              segment: d.segment,
-              id: d.id,
-              frequency: d.frequency,
-            })),
-            color: getSegmentColor(selectedSegment),
-          },
-        ]
+  const getSegmentStats = (segmentName: string) => {
+    const segmentCustomers = mockCustomers.filter((c) => c.segment === segmentName)
+    return {
+      count: segmentCustomers.length,
+      avgValue: (segmentCustomers.reduce((sum, c) => sum + c.totalSpent, 0) / segmentCustomers.length).toFixed(2),
+      avgScore: (segmentCustomers.reduce((sum, c) => sum + c.rfmScore, 0) / segmentCustomers.length).toFixed(1),
+    }
+  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-foreground">Segmentation Analysis</h2>
-          <p className="text-sm text-muted-foreground">
-            Interactive visualization of customer segments based on RFM values
-          </p>
-        </div>
-
-        {/* Segment Filter */}
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <select
-            value={selectedSegment}
-            onChange={(e) => setSelectedSegment(e.target.value)}
-            className="h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="all">All Segments</option>
-            {segments.map((segment) => (
-              <option key={segment.name} value={segment.name}>
-                {segment.name}
-              </option>
-            ))}
-          </select>
-        </div>
+      {/* Segment Filter Cards */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <button
+          onClick={() => setSelectedSegment("all")}
+          className={`rounded-lg border-2 p-3 text-left transition-all ${
+            selectedSegment === "all"
+              ? "border-primary bg-primary/10"
+              : "border-border bg-card hover:border-primary/50"
+          }`}
+        >
+          <p className="text-xs font-medium text-muted-foreground">All Segments</p>
+          <p className="text-lg font-semibold text-foreground">{mockCustomers.length}</p>
+        </button>
+        {segments.map((segment) => {
+          const stats = getSegmentStats(segment.name)
+          return (
+            <button
+              key={segment.name}
+              onClick={() => setSelectedSegment(segment.name)}
+              className={`rounded-lg border-2 p-3 text-left transition-all ${
+                selectedSegment === segment.name
+                  ? "border-primary bg-primary/10"
+                  : "border-border bg-card hover:border-primary/50"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <div
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: segment.color }}
+                />
+                <p className="text-xs font-medium text-muted-foreground">{segment.name}</p>
+              </div>
+              <p className="text-lg font-semibold text-foreground">{stats.count}</p>
+              <p className="text-xs text-accent font-medium">${stats.avgValue}</p>
+            </button>
+          )
+        })}
       </div>
 
-      {/* Segment Legend */}
-      <div className="flex flex-wrap gap-3">
-        {segments.map((segment) => (
-          <button
-            key={segment.name}
-            onClick={() =>
-              setSelectedSegment(selectedSegment === segment.name ? "all" : segment.name)
-            }
-            className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all ${
-              selectedSegment === segment.name || selectedSegment === "all"
-                ? "border-transparent"
-                : "border-border opacity-50"
-            }`}
-            style={{
-              backgroundColor:
-                selectedSegment === segment.name || selectedSegment === "all"
-                  ? `${segment.color}20`
-                  : "transparent",
-              color: segment.color,
-            }}
-          >
-            <span
-              className="h-2.5 w-2.5 rounded-full"
-              style={{ backgroundColor: segment.color }}
-            />
-            {segment.name}
-            <span className="rounded-md bg-background/50 px-1.5 py-0.5 text-xs">
-              {segment.count}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {/* Main Scatter Plot */}
+      {/* Segment Details */}
       <ChartCard
-        title="RFM Distribution"
-        subtitle="Bubble size represents purchase frequency"
-        className="min-h-[500px]"
+        title={selectedSegment === "all" ? "All Customer Segments" : selectedSegment}
+        subtitle={`${filteredCustomers.length} customers`}
       >
-        <ResponsiveContainer width="100%" height={450}>
-          <ScatterChart margin={{ top: 20, right: 20, bottom: 40, left: 40 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis
-              type="number"
-              dataKey="x"
-              name="Recency"
-              label={{
-                value: "Recency (days)",
-                position: "bottom",
-                fill: "hsl(var(--muted-foreground))",
-                fontSize: 12,
-              }}
-              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-              axisLine={{ stroke: "hsl(var(--border))" }}
-            />
-            <YAxis
-              type="number"
-              dataKey="y"
-              name="Monetary"
-              label={{
-                value: "Monetary ($)",
-                angle: -90,
-                position: "insideLeft",
-                fill: "hsl(var(--muted-foreground))",
-                fontSize: 12,
-              }}
-              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-              axisLine={{ stroke: "hsl(var(--border))" }}
-            />
-            <ZAxis type="number" dataKey="z" range={[50, 400]} />
-            <Tooltip
-              cursor={{ strokeDasharray: "3 3" }}
-              contentStyle={{
-                backgroundColor: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border))",
-                borderRadius: "8px",
-                color: "hsl(var(--foreground))",
-              }}
-              content={({ active, payload }) => {
-                if (active && payload && payload.length) {
-                  const data = payload[0].payload
-                  return (
-                    <div className="rounded-lg border border-border bg-card p-3 shadow-lg">
-                      <p className="font-semibold text-foreground">{data.id}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Segment:{" "}
-                        <span style={{ color: getSegmentColor(data.segment) }}>
-                          {data.segment}
-                        </span>
-                      </p>
-                      <div className="mt-2 space-y-1 text-sm">
-                        <p className="text-foreground">Recency: {data.x} days</p>
-                        <p className="text-foreground">Monetary: ${data.y}</p>
-                        <p className="text-foreground">Frequency: {data.frequency}</p>
-                      </div>
-                    </div>
-                  )
-                }
-                return null
-              }}
-            />
-            {groupedData.map((group) => (
-              <Scatter
-                key={group.name}
-                name={group.name}
-                data={group.data}
-                fill={group.color}
-                fillOpacity={0.7}
-              />
-            ))}
-          </ScatterChart>
-        </ResponsiveContainer>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="border-b border-border">
+              <tr>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Customer</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Email</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground">RFM Score</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Total Spent</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Frequency</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Sentiment</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {filteredCustomers.map((customer) => (
+                <tr key={customer.id} className="hover:bg-secondary/30 transition-colors">
+                  <td className="px-4 py-3 font-medium text-foreground">{customer.name}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{customer.email}</td>
+                  <td className="px-4 py-3">
+                    <span className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
+                      <TrendingUp className="h-3 w-3" />
+                      {customer.rfmScore}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 font-medium text-accent">${customer.totalSpent.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-foreground">{customer.frequency}x</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
+                        customer.sentiment === "positive"
+                          ? "bg-green-500/10 text-green-500"
+                          : customer.sentiment === "neutral"
+                            ? "bg-yellow-500/10 text-yellow-500"
+                            : "bg-red-500/10 text-red-500"
+                      }`}
+                    >
+                      {customer.sentiment}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </ChartCard>
 
-      {/* Segment Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {segments.map((segment) => {
-          const segmentCustomers = scatterData.filter((d) => d.segment === segment.name)
-          const avgRecency =
-            segmentCustomers.reduce((acc, c) => acc + c.recency, 0) / segmentCustomers.length
-          const avgMonetary =
-            segmentCustomers.reduce((acc, c) => acc + c.monetary, 0) / segmentCustomers.length
+      {/* Segment Insights */}
+      {selectedSegment !== "all" && (
+        <ChartCard title={`${selectedSegment} Insights`} subtitle="Segment-specific targeting strategy">
+          <div className="space-y-4">
+            {Object.entries(mockSegmentOffers).map(([segment, offer]) => {
+              if (segment !== selectedSegment) return null
+              return (
+                <div key={segment} className="rounded-lg bg-secondary/30 p-5 border border-border">
+                  <div className="space-y-3">
+                    <div>
+                      <h4 className="text-sm font-semibold text-primary mb-1">Campaign Offer</h4>
+                      <p className="text-foreground font-medium">{offer.offer}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-primary mb-1">Messaging Strategy</h4>
+                      <p className="text-foreground text-sm">{offer.message}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-accent mb-1">Primary Incentive</h4>
+                      <p className="text-foreground text-sm">{offer.incentive}</p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </ChartCard>
+      )}
 
+      {/* Statistics */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {segments.map((segment) => {
+          const stats = getSegmentStats(segment.name)
           return (
-            <div
-              key={segment.name}
-              className="rounded-xl border border-border bg-card p-4 transition-shadow hover:shadow-lg"
-              style={{ borderLeftColor: segment.color, borderLeftWidth: "3px" }}
-            >
-              <h4 className="text-sm font-semibold text-foreground">{segment.name}</h4>
-              <p className="mt-1 text-2xl font-bold" style={{ color: segment.color }}>
-                {segment.count}
-              </p>
-              <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                <p>Avg Recency: {Math.round(avgRecency)} days</p>
-                <p>Avg Monetary: ${Math.round(avgMonetary)}</p>
+            <div key={segment.name} className="rounded-lg border border-border bg-card p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-semibold text-muted-foreground">{segment.name}</p>
+                <div
+                  className="h-3 w-3 rounded-full"
+                  style={{ backgroundColor: segment.color }}
+                />
+              </div>
+              <div className="space-y-2">
+                <div>
+                  <p className="text-xs text-muted-foreground">Customers</p>
+                  <p className="text-xl font-bold text-foreground">{stats.count}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Avg Spent</p>
+                  <p className="text-lg font-semibold text-accent">${stats.avgValue}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">RFM Score</p>
+                  <p className="text-lg font-semibold text-primary">{stats.avgScore}</p>
+                </div>
               </div>
             </div>
           )

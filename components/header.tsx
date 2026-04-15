@@ -12,10 +12,10 @@ export function Header() {
       {/* Title */}
       <div className="flex flex-col">
         <h1 className="text-lg font-semibold text-foreground">
-          Customer Segmentation for Retail using RFM
+          VoltStream
         </h1>
         <p className="text-xs text-muted-foreground">
-          Real-time Retail Analytics & Smart Product Recommendation System
+          Electrical & Electronics Retail Intelligence Suite
         </p>
       </div>
 
