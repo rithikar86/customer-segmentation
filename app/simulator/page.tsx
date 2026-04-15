@@ -1,26 +1,118 @@
 "use client"
 
 import { useState } from "react"
-import { scatterData, recommendedProducts, getSegmentColor, formatCurrency } from "@/lib/mock-data"
+import { ChartCard } from "@/components/chart-card"
+import { ConsoleLog } from "@/components/console-log"
+import { mockCustomers, mockProducts, getSegmentColor, formatCurrency } from "@/lib/mock-data"
 import { useToast } from "@/components/toast-provider"
-import { Play, Package, RefreshCw, Sparkles } from "lucide-react"
+import { Play, Package, RefreshCw, Sparkles, Send, AlertCircle } from "lucide-react"
+import type { LogEntry } from "@/components/console-log"
 
 export default function SimulatorPage() {
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(scatterData[0].id)
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(mockCustomers[0].id)
   const [isSimulating, setIsSimulating] = useState(false)
+  const [logs, setLogs] = useState<LogEntry[]>([])
+  const [purchaseAmount, setPurchaseAmount] = useState<number>(150)
   const { showToast } = useToast()
 
-  const selectedCustomer = scatterData.find((c) => c.id === selectedCustomerId)
-  const customerRecommendations = recommendedProducts.slice(0, 4)
+  const selectedCustomer = mockCustomers.find((c) => c.id === selectedCustomerId)
+  const customerProducts = mockProducts.slice(0, 3)
+
+  const addLog = (message: string, type: LogEntry["type"] = "info") => {
+    setLogs((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString() + Math.random(),
+        message,
+        timestamp: new Date(),
+        type,
+      },
+    ])
+  }
 
   const handleSimulatePurchase = async () => {
+    if (!selectedCustomer) return
     setIsSimulating(true)
-    
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    
+    setLogs([])
+
+    // SMTP Connection logs
+    addLog("Connecting to mail.voltstream.com...", "smtp")
+    await new Promise((resolve) => setTimeout(resolve, 600))
+
+    addLog("Authentication successful with SMTP server", "success")
+    await new Promise((resolve) => setTimeout(resolve, 400))
+
+    addLog(`Composing purchase notification for ${selectedCustomer.email}`, "info")
+    await new Promise((resolve) => setTimeout(resolve, 300))
+
+    addLog(`Purchase amount: ${formatCurrency(purchaseAmount)}`, "info")
+    await new Promise((resolve) => setTimeout(resolve, 300))
+
+    addLog("Updating RFM values in database...", "info")
+    await new Promise((resolve) => setTimeout(resolve, 500))
+
+    const newFrequency = selectedCustomer.frequency + 1
+    const newMonetary = selectedCustomer.totalSpent + purchaseAmount
+    const newRecency = 0
+
+    addLog(`RFM Update: Recency=${newRecency}, Frequency=${newFrequency}, Monetary=${formatCurrency(newMonetary)}`, "info")
+    await new Promise((resolve) => setTimeout(resolve, 400))
+
+    addLog(`Sending email notification to ${selectedCustomer.email}...`, "smtp")
+    await new Promise((resolve) => setTimeout(resolve, 800))
+
+    addLog(`Email delivered to ${selectedCustomer.email}`, "success")
+    await new Promise((resolve) => setTimeout(resolve, 300))
+
+    addLog("Updating customer segment...", "info")
+    await new Promise((resolve) => setTimeout(resolve, 400))
+
+    addLog("Purchase simulation completed successfully", "success")
+
     setIsSimulating(false)
-    showToast("Purchase simulated successfully! RFM values updated.", "success")
+    showToast("Purchase simulated! Customer RFM values and notifications updated.", "success")
+  }
+
+  const handleSendNotification = async () => {
+    if (!selectedCustomer) return
+    setIsSimulating(true)
+    setLogs([])
+
+    addLog("Initiating notification delivery...", "info")
+    await new Promise((resolve) => setTimeout(resolve, 400))
+
+    addLog("Connecting to mail.voltstream.com...", "smtp")
+    await new Promise((resolve) => setTimeout(resolve, 600))
+
+    addLog("Authenticating SMTP credentials", "info")
+    await new Promise((resolve) => setTimeout(resolve, 300))
+
+    addLog("Building email message", "info")
+    await new Promise((resolve) => setTimeout(resolve, 300))
+
+    addLog(`Recipient: ${selectedCustomer.email}`, "info")
+    await new Promise((resolve) => setTimeout(resolve, 200))
+
+    addLog("Subject: Exclusive Offer for You", "info")
+    await new Promise((resolve) => setTimeout(resolve, 200))
+
+    addLog("Attaching personalized recommendation", "info")
+    await new Promise((resolve) => setTimeout(resolve, 400))
+
+    addLog("Sending via SMTP gateway...", "smtp")
+    await new Promise((resolve) => setTimeout(resolve, 600))
+
+    addLog(`Email delivered to ${selectedCustomer.email}`, "success")
+    await new Promise((resolve) => setTimeout(resolve, 200))
+
+    addLog("Delivery confirmed - Status: 250 OK", "success")
+
+    setIsSimulating(false)
+    showToast("Notification sent successfully to " + selectedCustomer.email, "success")
+  }
+
+  const clearLogs = () => {
+    setLogs([])
   }
 
   if (!selectedCustomer) return null
@@ -31,44 +123,39 @@ export default function SimulatorPage() {
       <div>
         <h2 className="text-xl font-semibold text-foreground">Customer Simulator</h2>
         <p className="text-sm text-muted-foreground">
-          Simulate purchases and see how RFM values and segments change
+          Simulate purchases and notifications to see RFM values and segment changes in real-time
         </p>
       </div>
 
       {/* Customer Selector */}
-      <div className="rounded-xl border border-border bg-card p-6">
-        <label className="mb-2 block text-sm font-medium text-foreground">
-          Select Customer
-        </label>
+      <ChartCard title="Select Customer" subtitle="Choose a customer to simulate with">
         <select
           value={selectedCustomerId}
           onChange={(e) => setSelectedCustomerId(e.target.value)}
-          className="h-10 w-full max-w-md rounded-lg border border-border bg-background px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          className="h-10 w-full max-w-md rounded-lg border border-border bg-input px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
         >
-          {scatterData.map((customer) => (
+          {mockCustomers.map((customer) => (
             <option key={customer.id} value={customer.id}>
-              {customer.id} - {customer.segment}
+              {customer.name} ({customer.segment})
             </option>
           ))}
         </select>
-      </div>
+      </ChartCard>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Customer Profile */}
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h3 className="mb-4 text-sm font-semibold text-foreground">Customer Profile</h3>
-
-          {/* Customer ID and Segment */}
-          <div className="mb-6 flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary">
-              {selectedCustomer.id.slice(-2)}
+        <ChartCard title="Customer Profile" subtitle={selectedCustomer.id}>
+          {/* Customer Header */}
+          <div className="mb-6 flex items-center gap-4 pb-4 border-b border-border">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary">
+              {selectedCustomer.name.charAt(0)}
             </div>
             <div>
-              <p className="text-lg font-semibold text-foreground">{selectedCustomer.id}</p>
+              <p className="text-lg font-semibold text-foreground">{selectedCustomer.name}</p>
               <span
-                className="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium"
+                className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium mt-1"
                 style={{
-                  backgroundColor: `${getSegmentColor(selectedCustomer.segment)}20`,
+                  backgroundColor: getSegmentColor(selectedCustomer.segment) + "20",
                   color: getSegmentColor(selectedCustomer.segment),
                 }}
               >
@@ -78,122 +165,161 @@ export default function SimulatorPage() {
           </div>
 
           {/* RFM Values */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="rounded-lg border border-border bg-background p-4 text-center">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Recency</p>
-              <p className="mt-1 text-2xl font-bold text-primary">{selectedCustomer.recency}</p>
-              <p className="text-xs text-muted-foreground">days ago</p>
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="rounded-lg bg-secondary/30 border border-border p-4 text-center">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Recency</p>
+              <p className="mt-2 text-2xl font-bold text-primary">{selectedCustomer.recency}</p>
+              <p className="text-xs text-muted-foreground mt-1">days ago</p>
             </div>
-            <div className="rounded-lg border border-border bg-background p-4 text-center">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Frequency</p>
-              <p className="mt-1 text-2xl font-bold text-chart-2">{selectedCustomer.frequency}</p>
-              <p className="text-xs text-muted-foreground">purchases</p>
+            <div className="rounded-lg bg-secondary/30 border border-border p-4 text-center">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Frequency</p>
+              <p className="mt-2 text-2xl font-bold text-accent">{selectedCustomer.frequency}</p>
+              <p className="text-xs text-muted-foreground mt-1">purchases</p>
             </div>
-            <div className="rounded-lg border border-border bg-background p-4 text-center">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Monetary</p>
-              <p className="mt-1 text-2xl font-bold text-chart-3">
-                ${selectedCustomer.monetary}
+            <div className="rounded-lg bg-secondary/30 border border-border p-4 text-center">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Monetary</p>
+              <p className="mt-2 text-2xl font-bold text-foreground">
+                {formatCurrency(selectedCustomer.totalSpent)}
               </p>
-              <p className="text-xs text-muted-foreground">total spent</p>
+              <p className="text-xs text-muted-foreground mt-1">total spent</p>
             </div>
           </div>
 
-          {/* Additional Stats */}
-          <div className="mt-6 space-y-3">
-            <div className="flex justify-between border-b border-border py-2">
+          {/* Additional Info */}
+          <div className="space-y-3 mb-6 pb-6 border-b border-border">
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Email</span>
+              <span className="text-sm font-medium text-foreground">{selectedCustomer.email}</span>
+            </div>
+            <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Last Purchase</span>
-              <span className="text-sm font-medium text-foreground">
-                {selectedCustomer.lastPurchase}
-              </span>
+              <span className="text-sm font-medium text-foreground">{selectedCustomer.lastPurchase}</span>
             </div>
-            <div className="flex justify-between border-b border-border py-2">
-              <span className="text-sm text-muted-foreground">Total Orders</span>
-              <span className="text-sm font-medium text-foreground">
-                {selectedCustomer.totalOrders}
-              </span>
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">RFM Score</span>
+              <span className="text-sm font-medium text-primary">{selectedCustomer.rfmScore}/100</span>
             </div>
-            <div className="flex justify-between py-2">
-              <span className="text-sm text-muted-foreground">Average Order Value</span>
-              <span className="text-sm font-medium text-foreground">
-                {formatCurrency(selectedCustomer.monetary / selectedCustomer.frequency)}
-              </span>
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Feedback Score</span>
+              <span className="text-sm font-medium text-accent">{selectedCustomer.feedbackScore}/10</span>
             </div>
           </div>
 
-          {/* Simulate Button */}
-          <button
-            onClick={handleSimulatePurchase}
-            disabled={isSimulating}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-          >
-            {isSimulating ? (
-              <>
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                Simulating...
-              </>
-            ) : (
-              <>
-                <Play className="h-4 w-4" />
-                Simulate Purchase
-              </>
-            )}
-          </button>
-        </div>
+          {/* Purchase Amount */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-foreground mb-2">Purchase Amount ($)</label>
+            <input
+              type="number"
+              value={purchaseAmount}
+              onChange={(e) => setPurchaseAmount(parseFloat(e.target.value) || 0)}
+              min="1"
+              max="10000"
+              className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="space-y-3">
+            <button
+              onClick={handleSimulatePurchase}
+              disabled={isSimulating}
+              className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSimulating ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  Simulating...
+                </>
+              ) : (
+                <>
+                  <Play className="h-4 w-4" />
+                  Simulate Purchase
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={handleSendNotification}
+              disabled={isSimulating}
+              className="w-full flex items-center justify-center gap-2 rounded-lg border border-primary bg-primary/10 px-4 py-3 text-sm font-semibold text-primary transition-all hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSimulating ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  Send Notification
+                </>
+              )}
+            </button>
+          </div>
+        </ChartCard>
 
         {/* Recommended Products */}
-        <div className="rounded-xl border border-border bg-card p-6">
-          <div className="mb-4 flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-semibold text-foreground">Recommended Products</h3>
-          </div>
-
+        <ChartCard title="Recommended Products" subtitle="Suggested items for this customer">
           <div className="space-y-3">
-            {customerRecommendations.map((product, index) => (
+            {customerProducts.map((product) => (
               <div
                 key={product.id}
-                className="flex items-center gap-4 rounded-lg border border-border bg-background p-4 transition-colors hover:bg-accent/50"
+                className="flex items-center gap-4 rounded-lg border border-border bg-secondary/30 p-4 transition-colors hover:bg-secondary/50"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <Package className="h-5 w-5 text-primary" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-xl">
+                  {product.image}
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">{product.name}</p>
+                  <p className="text-sm font-medium text-foreground line-clamp-1">{product.name}</p>
                   <p className="text-xs text-muted-foreground">{product.category}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-semibold text-primary">
-                    {(product.score * 100).toFixed(0)}%
-                  </p>
-                  <p className="text-xs text-muted-foreground">match</p>
+                  <p className="text-sm font-semibold text-accent">{formatCurrency(product.price)}</p>
+                  <div className="flex gap-1 mt-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <span
+                        key={i}
+                        className={`text-xs ${
+                          i < Math.floor(product.rating)
+                            ? "text-yellow-500"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        ★
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Prediction */}
+          {/* Prediction Box */}
           <div className="mt-6 rounded-lg border border-primary/30 bg-primary/5 p-4">
-            <h4 className="mb-2 text-sm font-semibold text-foreground">
-              Prediction After Purchase
+            <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
+              <AlertCircle className="h-4 w-4" />
+              Predicted After Purchase
             </h4>
             <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <p className="text-xs text-muted-foreground">New Recency</p>
-                <p className="text-lg font-bold text-primary">0</p>
+              <div className="rounded bg-secondary/50 p-3">
+                <p className="text-xs text-muted-foreground mb-1">New Recency</p>
+                <p className="text-lg font-bold text-primary">0 days</p>
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">New Frequency</p>
-                <p className="text-lg font-bold text-chart-2">
-                  {selectedCustomer.frequency + 1}
-                </p>
+              <div className="rounded bg-secondary/50 p-3">
+                <p className="text-xs text-muted-foreground mb-1">New Frequency</p>
+                <p className="text-lg font-bold text-accent">{selectedCustomer.frequency + 1}</p>
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Predicted Segment</p>
-                <p className="text-sm font-bold text-chart-3">Champions</p>
+              <div className="rounded bg-secondary/50 p-3">
+                <p className="text-xs text-muted-foreground mb-1">New Segment</p>
+                <p className="text-lg font-bold text-foreground">Elite Tech Buyers</p>
               </div>
             </div>
           </div>
-        </div>
+        </ChartCard>
       </div>
+
+      {/* Console Log */}
+      <ConsoleLog logs={logs} onClear={clearLogs} />
     </div>
   )
 }
